@@ -1,50 +1,81 @@
 <script setup>
-import router from "../main";
-import { ref } from "vue";
-import axios from 'axios'
-//设置默认图像
-const pic_url = ref('https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png')
-//点击退出登录按钮
-const onBack = () => {
-  //清除当前用户token
-  localStorage.removeItem("token");
-  console.log("token已清除");
-  //跳转到登录页
-  router.push("/login");
-};
+import { ref } from 'vue';
 
-//点击测试按钮
-const GetInfo = async ()=>{
-    //获取用户token
-    const token = localStorage.getItem('token')
-    console.log('token:'+token);
-    
-    //发起请求
-    const res = await axios({
-        method:'get',
-        url:'http://127.0.0.1:8080/my/info',
-        headers:{
-            Authorization: token
-        }
-    })
-    console.log(res);
-    //获取用户头像
-    pic_url.value = res.data.data.user_pic
-    
-}
-
-
+//定义一个数据
+const UserData = ref({
+  username:"miraculous",
+  avator:"https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
+  message:"你好"
+})
 </script>
 
+
 <template>
-  <h1>主页</h1>
-  <div>
-    <el-button @click="GetInfo" type="primary">测试按钮</el-button>
-    <el-button @click="onBack" type="danger">退出登录</el-button>
-  </div>
-  <div style="margin-top: 50px;margin-left: 20px;" class="block">
-    <el-avatar :size="50" :src="pic_url" />
+  <div class="common-layout">
+    <el-container>
+      <el-aside width="200px">Aside</el-aside>
+      <el-container>
+        <el-header class="header">
+          {{ UserData.username }}
+        </el-header>
+        <el-main class="main">
+          <div class="message">
+            <el-avatar style="margin-left: 10px; margin-right: 10px;" shape="square" size="10px" :src="UserData.avator" />
+            {{UserData.message }}
+          </div>
+          
+        </el-main>
+        <el-footer class="footer">
+          <div>
+            "这里是我打的字"
+          </div>
+          <el-button type="primary">发送</el-button>
+        </el-footer>
+      </el-container>
+    </el-container>
   </div>
 </template>
 
-<style scoped></style>
+
+<style scoped>
+.common-layout{
+  width: 700px;
+  height: 700px;
+  background-color:aquamarine;
+  margin: 56px auto;
+  display: flex;
+}
+.header{
+  flex: 0.15;
+  background-color: bisque;
+  text-align: center;
+  align-content: center;
+}
+.main{
+  background-color: greenyellow;
+  flex: 0.75;
+}
+.footer {
+  display: flex; 
+  justify-content: space-between; /* 子元素水平分布 */
+  align-items: flex-end; /* 子元素垂直对齐到容器的底部 */
+  padding: 10px; /* 添加一些内边距 */
+}
+
+.footer div {
+  flex: 1; /* 让文本内容占据剩余空间 */
+}
+
+.footer .el-button {
+  margin-left: 10px; /* 添加一些左边距，使按钮与文本内容分开 */
+}
+.message{
+  background-color:yellow;
+  width: 200px;
+  display: flex;
+  justify-content:start;
+  align-items:center;
+  height: auto;
+}
+
+</style>
