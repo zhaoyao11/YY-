@@ -5,6 +5,8 @@ import router from "./router/user.js";
 import expressJWT from "express-jwt";
 import WebSocket from "ws";
 import http from "http";
+import { userInfo } from "os";
+import { da } from "element-plus/es/locales.mjs";
 const app = express();
 
 //创建http服务器
@@ -16,12 +18,15 @@ const clients = new Set();
 
 //客户端连接
 wss.on("connection", (ws) => {
-  console.log("客户端连接成功");
+  var username = ""
   clients.add(ws);
 
   //监听websocket连接
   ws.on("message", (message) => {
-    console.log("收到消息", message);
+    const data = JSON.parse(message)
+    // console.log("收到消息", data);
+    console.log(data.data + "进入聊天室");
+    username = data.data
     //广播消息给所有客户端
     for (const client of clients) {
       if (client.readyState === WebSocket.OPEN) {
@@ -32,7 +37,7 @@ wss.on("connection", (ws) => {
   });
   //监听客户端断开连接
   ws.on("close", () => {
-    console.log("客户端断开连接");
+    console.log(username +"退出聊天室");
     clients.delete(ws);
   });
 });

@@ -1,6 +1,9 @@
 <script setup>
+import axios from "axios";
 import { isIOS } from "element-plus/es/utils/browser.mjs";
-import { ref } from "vue";
+import { onBeforeMount, onMounted, ref } from "vue";
+//当前用户信息
+const CurrentUserName = ref("")
 //文本输入区域
 const textarea = ref("");
 //当前用户
@@ -88,6 +91,8 @@ const UserData = ref([
   },
 ]);
 
+
+
 //定义消息数组
 const messages_other = ref([
   {
@@ -109,8 +114,19 @@ const messages_my = ref([]);
 const socket = new WebSocket("http://localhost:3000");
 
 //监听websocket链接
-socket.onopen = () => {
-  console.log("连接到服务器");
+socket.onopen = async () => {
+  //获取用户信息
+  const token = localStorage.getItem('token')
+  const res = await axios.get("http://127.0.0.1:8080/my/info", {
+      headers: {
+        Authorization: token
+      }
+    });
+  console.log(res.data.data,"userinfo");
+  CurrentUserName.value = res.data.data.username
+  // console.log("连接到服务器");
+  socket.send(JSON.stringify({type:"username",data:CurrentUserName.value}))
+  
 };
 const messagesDiv = document.getElementById("main");
 const messageInput = document.getElementsByClassName("InputArea");
@@ -118,7 +134,7 @@ const messageInput = document.getElementsByClassName("InputArea");
 //监听服务器消息
 socket.onmessage = (event) => {
   const message = event.data;
-  console.log("消息为：" + message);
+  // console.log("消息为：" + message);
   messages_my.value.push({
     id: messages_my.value.length + 1,
     message: message,
