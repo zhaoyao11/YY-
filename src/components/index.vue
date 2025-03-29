@@ -1,113 +1,39 @@
 <script setup>
 import axios from "axios";
-import { isIOS } from "element-plus/es/utils/browser.mjs";
-import { onBeforeMount, onMounted, ref } from "vue";
+import { ElMessage } from "element-plus";
+import { ref } from "vue";
 //当前用户信息
-const CurrentUserName = ref("")
+const CurrentUserName = ref({
+  isOnline: false,
+  username: "",
+  avator:""
+});
+
+//当前在线用户数组
+const UserOnlineArray = ref([]);
 //文本输入区域
 const textarea = ref("");
 //当前用户
 const isActive = ref(0);
 
 //定义一个数据
-const UserData = ref([
-  {
-    username: "miraculous",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好1",
-  },
-  {
-    username: "miraculous1",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好2",
-  },
-  {
-    username: "miraculous2",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好3",
-  },
-  {
-    username: "miraculous3",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好",
-  },
-  {
-    username: "miraculous4",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好",
-  },
-  {
-    username: "miraculous5",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好",
-  },
-  {
-    username: "miraculous6",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好",
-  },
-  {
-    username: "miraculous7",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好",
-  },
-  {
-    username: "miraculous8",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好",
-  },
-  {
-    username: "miraculous9",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好",
-  },
-  {
-    username: "miraculous10",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好",
-  },
-  {
-    username: "miraculous11",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好",
-  },
-  {
-    username: "miraculous12",
-    avator:
-      "https://img2.baidu.com/it/u=3739988182,1148289226&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=689",
-    message: "你好",
-  },
-]);
-
-
+const UserData = ref([{}]);
 
 //定义消息数组
-const messages_other = ref([
-  {
-    id: 1,
-    message: "让我们红尘作伴",
-  },
-  {
-    id: 2,
-    message: "活得潇潇洒洒",
-  },
-  {
-    id: 3,
-    message: "策马奔腾",
-  },
-]);
+// const messages_other = ref([
+//   {
+//     id: 1,
+//     message: "让我们红尘作伴",
+//   },
+//   {
+//     id: 2,
+//     message: "活得潇潇洒洒",
+//   },
+//   {
+//     id: 3,
+//     message: "策马奔腾",
+//   },
+// ]);
 const messages_my = ref([]);
 
 //创建websocket连接
@@ -116,29 +42,48 @@ const socket = new WebSocket("http://localhost:3000");
 //监听websocket链接
 socket.onopen = async () => {
   //获取用户信息
-  const token = localStorage.getItem('token')
-  const res = await axios.get("http://127.0.0.1:8080/my/info", {
-      headers: {
-        Authorization: token
-      }
-    });
-  console.log(res.data.data,"userinfo");
-  CurrentUserName.value = res.data.data.username
+  const token = localStorage.getItem("token");
+  const res = await axios.get("http://0.0.0.0:8080/my/info", {
+    headers: {
+      Authorization: token,
+    },
+  });
+  // console.log(res,"userinfo");
+  CurrentUserName.value.username = res.data.data.username;
+  CurrentUserName.value.isOnline = true;
+  CurrentUserName.value.avator = res.data.data.user_pic
   // console.log("连接到服务器");
-  socket.send(JSON.stringify({type:"username",data:CurrentUserName.value}))
-  
+  socket.send(
+    JSON.stringify({ type: "userInfo", data: CurrentUserName.value })
+  );
 };
-const messagesDiv = document.getElementById("main");
-const messageInput = document.getElementsByClassName("InputArea");
-
 //监听服务器消息
 socket.onmessage = (event) => {
-  const message = event.data;
-  // console.log("消息为：" + message);
-  messages_my.value.push({
-    id: messages_my.value.length + 1,
-    message: message,
-  });
+  // const message = event.data;
+  const message = JSON.parse(event.data);
+  console.log(message, "message");
+  UserData.value = message.users.filter((item)=>{
+    return item.username !== CurrentUserName.value.username
+  })
+  // CurrentUserName.value = message.user
+
+  if (message.type === "1") {
+    //表示进入聊天室
+    ElMessage({
+      message: message.message,
+      type: "success",
+    });
+    //将该用户加入
+  }
+  if (message.type === 0) {
+    //表示退出聊天室
+    ElMessage(message.message);
+  }
+
+  // messages_my.value.push({
+  //   id: messages_my.value.length + 1,
+  //   message: message,
+  // });
 };
 //监听websocket错误
 socket.onerror = (err) => {
@@ -151,8 +96,6 @@ const onSubmit = () => {
   socket.send(textarea.value);
   textarea.value = "";
 };
-
-//监听输入框输入回车时发送消息
 
 //切换用户回调函数
 const onChangeUserItem = (index) => {
@@ -210,7 +153,11 @@ const onChangeUserItem = (index) => {
             :key="item.id"
           >
             <span
-              style="padding: 5px; background-color: greenyellow; line-height: 30px"
+              style="
+                padding: 5px;
+                background-color: greenyellow;
+                line-height: 30px;
+              "
               >{{ item.message }}</span
             >
             <el-avatar

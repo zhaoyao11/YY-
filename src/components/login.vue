@@ -44,7 +44,7 @@ const onLogin = async ()=>{
   }
   const res = await axios({
     method:'post',
-    url:'http://127.0.0.1:8080/api/login',
+    url:'http://0.0.0.0:8080/api/login',
     data:{
       username:username.value,
       password:password.value
@@ -65,7 +65,7 @@ const onLogin = async ()=>{
       plain:true
     })
     //拿到token信息
-    console.log(res);
+    // console.log(res);
     const my_token = res.data.token
     //将token存放到localstorage中
     localStorage.setItem('token',my_token)
@@ -85,13 +85,13 @@ const onRegister =async()=>{
   //发起注册请求
   const res = await axios({
     method:'post',
-    url:'http://127.0.0.1:8080/api/register',
+    url:'http://0.0.0.0:8080/api/register',
     data:{
         username:data.username,
         password:data.password
     }
   })
-  console.log(res);
+  // console.log(res);
   if(res.data.status){
     //该账号已经被注册
     ElMessage({
@@ -107,9 +107,6 @@ const onRegister =async()=>{
       plain:true
     })
   }
-
-  
-  
   
 }
 

@@ -14,30 +14,74 @@ const HttpServer = http.createServer(app);
 //创建Websocket服务器
 const wss = new WebSocket.Server({ server: HttpServer });
 //存储连接的客户端
-const clients = new Set();
+const clients = new Map();
+//判断用户是否存在于clients中
+const isSaveInClients = (username)=>{
+  const clientsArray = [...clients.values()];
+  if(clientsArray.includes(`username:${username}`)){
+    return true
+  }
+  return false
+}
 
 //客户端连接
 wss.on("connection", (ws) => {
-  var username = ""
-  clients.add(ws);
-
+  var userInfo = {};
   //监听websocket连接
   ws.on("message", (message) => {
-    const data = JSON.parse(message)
-    // console.log("收到消息", data);
-    console.log(data.data + "进入聊天室");
-    username = data.data
-    //广播消息给所有客户端
-    for (const client of clients) {
-      if (client.readyState === WebSocket.OPEN) {
-        // console.log("进入广播");
-        client.send(message);
+    const data = JSON.parse(message);
+    if (data.type == "userInfo") {
+      //判断该用户是否已经在clients中
+      if(isSaveInClients(data.data.username)){
+        return
+      }
+      // console.log("进来了");
+      //如果客户端发送来的是用户信息
+      userInfo = data.data;
+      clients.set(ws, userInfo);
+      console.log(clients.values(), "clients");
+      //将map转为array
+      const clientsArray = [...clients.values()];
+      //广播消息给所有客户端
+      for (const [clientWs, clientUserInfo] of clients) {
+        //给其他用户广播有新用户登录
+        if (clientWs.readyState === WebSocket.OPEN) {
+          // console.log("进来了广播");
+          clientWs.send(
+            JSON.stringify({
+              type: "1",
+              user: {
+                username: userInfo.username,
+                isOnline: true,
+              },
+              message: `${userInfo.username}进入聊天室`,
+              users: clientsArray,
+            })
+          );
+        }
       }
     }
+    //  console.log("收到消息", data);
+    console.log(data);
   });
   //监听客户端断开连接
   ws.on("close", () => {
-    console.log(username +"退出聊天室");
+    // console.log(username +"退出聊天室");
+    //退出聊天室广播
+    for (const [clientWs,clientUserInfo] of clients) {
+      if (clientWs.readyState === WebSocket.OPEN) {
+        clientWs.send(
+          JSON.stringify({
+            type: "0",
+            user: {
+              username: userInfo.username,
+              isOnline: true,
+            },
+            message: `${userInfo.username}退出聊天室`,
+          })
+        );
+      }
+    }
     clients.delete(ws);
   });
 });
@@ -100,7 +144,8 @@ db.query("select 1", (err, result) => {
   console.log(result);
 });
 
+const IP = "0.0.0.0"
 //监听
 app.listen(8080, () => {
-  console.log("server running at http://127.0.0.1:8080");
+  console.log(`server running at http://${IP}:8080`);
 });
