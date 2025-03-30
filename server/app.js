@@ -30,6 +30,7 @@ wss.on("connection", (ws) => {
   //监听websocket连接
   ws.on("message", (message) => {
     const data = JSON.parse(message);
+    //如果传入的是用户信息
     if (data.type == "userInfo") {
       //判断该用户是否已经在clients中
       if(isSaveInClients(data.data.username)){
@@ -39,7 +40,7 @@ wss.on("connection", (ws) => {
       //如果客户端发送来的是用户信息
       userInfo = data.data;
       clients.set(ws, userInfo);
-      console.log(clients.values(), "clients");
+      // console.log(clients.values(), "clients");
       //将map转为array
       const clientsArray = [...clients.values()];
       //广播消息给所有客户端
@@ -61,8 +62,20 @@ wss.on("connection", (ws) => {
         }
       }
     }
+    //如果传入的是聊天信息
+    if(data.type === "message"){
+      // console.log("传入的是聊天信息"); 
+      console.log(data,"聊天信息");
+      for(const [clientWs,clientUserInfo] of clients){
+        if(clientUserInfo.username === data.toName && clientWs.readyState === WebSocket.OPEN){
+          clientWs.send(JSON.stringify({
+            type:"message",
+            message:data.message
+          }))
+        }
+      }
+    }
     //  console.log("收到消息", data);
-    console.log(data);
   });
   //监听客户端断开连接
   ws.on("close", () => {

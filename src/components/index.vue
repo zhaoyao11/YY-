@@ -6,11 +6,9 @@ import { ref } from "vue";
 const CurrentUserName = ref({
   isOnline: false,
   username: "",
-  avator:""
+  avator: "",
 });
 
-//当前在线用户数组
-const UserOnlineArray = ref([]);
 //文本输入区域
 const textarea = ref("");
 //当前用户
@@ -20,21 +18,10 @@ const isActive = ref(0);
 const UserData = ref([{}]);
 
 //定义消息数组
-// const messages_other = ref([
-//   {
-//     id: 1,
-//     message: "让我们红尘作伴",
-//   },
-//   {
-//     id: 2,
-//     message: "活得潇潇洒洒",
-//   },
-//   {
-//     id: 3,
-//     message: "策马奔腾",
-//   },
-// ]);
-const messages_my = ref([]);
+// const messages_other = ref([]);
+// const messages_my = ref([]);
+const id = ref(1)
+const Allmessages = ref([])
 
 //创建websocket连接
 const socket = new WebSocket("http://localhost:3000");
@@ -51,7 +38,7 @@ socket.onopen = async () => {
   // console.log(res,"userinfo");
   CurrentUserName.value.username = res.data.data.username;
   CurrentUserName.value.isOnline = true;
-  CurrentUserName.value.avator = res.data.data.user_pic
+  CurrentUserName.value.avator = res.data.data.user_pic;
   // console.log("连接到服务器");
   socket.send(
     JSON.stringify({ type: "userInfo", data: CurrentUserName.value })
@@ -62,12 +49,24 @@ socket.onmessage = (event) => {
   // const message = event.data;
   const message = JSON.parse(event.data);
   console.log(message, "message");
-  UserData.value = message.users.filter((item)=>{
-    return item.username !== CurrentUserName.value.username
-  })
+
   // CurrentUserName.value = message.user
+  if (message.type === "message") {
+    // console.log(message,"jijiy");
+
+    Allmessages.value.push({
+      type:"other",
+      id:id.value,
+      message:message.message
+    });
+    id.value++;
+    // console.log(message_other.value, "value");
+  }
 
   if (message.type === "1") {
+    UserData.value = message.users.filter((item) => {
+      return item.username !== CurrentUserName.value.username;
+    });
     //表示进入聊天室
     ElMessage({
       message: message.message,
@@ -79,11 +78,6 @@ socket.onmessage = (event) => {
     //表示退出聊天室
     ElMessage(message.message);
   }
-
-  // messages_my.value.push({
-  //   id: messages_my.value.length + 1,
-  //   message: message,
-  // });
 };
 //监听websocket错误
 socket.onerror = (err) => {
@@ -92,8 +86,22 @@ socket.onerror = (err) => {
 
 //点击发送的回调函数
 const onSubmit = () => {
-  // console.log("发送内容为：" + textarea.value);
-  socket.send(textarea.value);
+  //获取当前用户用户名
+  console.log(UserData.value[isActive.value].username);
+  const toname = UserData.value[isActive.value].username;
+  //将消息发送给服务端再由服务端推送给指定用户
+  const json = {
+    type: "message",
+    toName: toname,
+    message: textarea.value,
+  };
+  Allmessages.value.push({
+    type:"my",
+    id:id.value,
+    message:textarea.value
+  })
+  id.value++
+  socket.send(JSON.stringify(json));
   textarea.value = "";
 };
 
@@ -132,41 +140,30 @@ const onChangeUserItem = (index) => {
         </el-header>
         <el-main class="main">
           <div
-            class="message_other"
-            v-for="(item, index) in messages_other"
+            v-for="(item, index) in Allmessages"
+            :class="item.type === 'other' ? 'message_other ' : 'message_my'"
             :key="item.id"
           >
+          <div v-if="item.type === 'other'" class="main_message">
             <el-avatar
-              style="margin-left: 10px; margin-right: 10px"
+              :class="item.type === 'other' ? 'other_avatar ' : 'my_avatar'"
               shape="square"
               size="10px"
-              :src="UserData[isActive].avator"
+              :src="item.type === 'other' ? UserData[isActive].avator : CurrentUserName.avator"
             />
-            <span
-              style="padding: 5px; background-color: white; line-height: 30px"
-              >{{ item.message }}</span
-            >
+            <span :class="item.type === 'other' ? 'other_span ' : 'my_span'">{{ item.message }}</span>
           </div>
-          <div
-            class="message_my"
-            v-for="(item, index) in messages_my"
-            :key="item.id"
-          >
-            <span
-              style="
-                padding: 5px;
-                background-color: greenyellow;
-                line-height: 30px;
-              "
-              >{{ item.message }}</span
-            >
+          <div v-else class="main_message">
+            <span :class="item.type === 'other' ? 'other_span ' : 'my_span'">{{ item.message }}</span>
             <el-avatar
-              style="margin-right: 10px; margin-left: 10px"
+              :class="item.type === 'other' ? 'other_avatar ' : 'my_avatar'"
               shape="square"
               size="10px"
-              :src="UserData[isActive].avator"
+              :src="item.type === 'other' ? UserData[isActive].avator : CurrentUserName.avator"
             />
           </div>
+          </div>
+            
         </el-main>
         <el-footer class="footer">
           <el-input
@@ -213,6 +210,10 @@ const onChangeUserItem = (index) => {
   display: flex;
   flex-direction: column;
 }
+.main_message{
+  display: flex;
+  flex-direction: row
+}
 .footer {
   display: flex;
   justify-content: space-between; /* 子元素水平分布 */
@@ -256,5 +257,23 @@ const onChangeUserItem = (index) => {
 }
 .ItemActive {
   background-color: rgb(231, 233, 233);
+}
+.my_span{
+  padding: 5px;
+  background-color: greenyellow;
+  line-height: 30px;
+}
+.my_avatar{
+  margin-right: 10px; 
+  margin-left: 10px
+}
+.other_span{
+  padding: 5px;
+  background-color: white; 
+  line-height: 30px
+}
+.other_avatar{
+  margin-left: 10px; 
+  margin-right: 10px
 }
 </style>
